@@ -1,0 +1,79 @@
+IR Triage Report
+
+Front Matter
+
+ANALYST NAME: Todd Przybycien Jr
+DATE: 06/19/2026
+SOURCE: AWS CloudTrail via SIEM
+ALERT ID: UR-AWS-20180820-0038
+SEVERITY: CRITICAL
+DISPOSITION: True Positive (TP)
+
+Initial Findings
+
+The AWS alert was initially triggered by an unusual spike in API activity from an IAM user. Investigation confirmed that the web_admin AWS access key had been exposed in a public GitHub repository and was subsequently used by an unauthorized party.
+CloudTrail logs show the compromised credentials were used to perform AWS reconnaissance and attempt account modifications, including EC2 and IAM-related actions. AWS had already identified the exposed credentials and generated support case 5244329601.
+Further investigation found evidence that the compromise extended beyond AWS. An S3 bucket (frothlywebcode) was accidentally made public, allowing files to be uploaded while exposed.
+On the Linux host hoth, the attacker created a root-level account (tomcat7), executed a local privilege escalation exploit, and established a reverse shell to 45.77.53.176. Additional attacker tools were downloaded and staged on the system.
+Multiple Windows systems were also affected. Users received phishing documents that delivered malware, resulting in execution of attacker tools and communication with a known command-and-control server. Confirmed affected hosts include ABUNGST-L and FYODOR-L.
+The investigation also identified cryptocurrency mining activity. Host BSTOLL-L successfully connected to mining infrastructure and mined Monero, indicating successful execution of attacker payloads within the environment.
+
+Incident Summary
+
+On 20 August 2018, a SIEM alert identified an unusual spike in AWS API activity associated with the IAM user web_admin. Initial investigation determined that the activity originated from a compromised AWS access key (AKIAJOGCDXJ5NW5PXUPA) that had been publicly exposed in a GitHub repository along with its corresponding secret access key. AWS had previously detected the exposure and generated support case 5244329601.
+CloudTrail logs show the exposed credentials were used to perform reconnaissance and attempted AWS resource management actions, including IAM and EC2 operations such as DescribeAccountAttributes, RunInstances, and CreateAccessKey. Activity was conducted through the ElasticWolf/5.1.6 client and represented a significant deviation from normal user behavior.
+Further investigation revealed evidence of broader compromise across cloud and endpoint environments. An S3 bucket (frothlywebcode) was publicly exposed following a bucket ACL modification event (ab45689d-69cd-41e7-8705-5350402cf7ac), allowing files to be uploaded while publicly accessible. Host-based telemetry identified unauthorized account creation, privilege escalation activity, attacker tooling deployment, command-and-control communications, and malware execution on both Linux and Windows systems.
+Compromised endpoints communicated with external infrastructure at 45.77.53.176, and phishing-delivered malware resulted in execution of tools used for persistence, reconnaissance, and remote access. Additionally, cryptocurrency mining activity was observed, including successful Monero mining on host BSTOLL-L and detections associated with the threat "Web Attack: JSCoinminer Download 8".
+Based on the confirmed credential compromise, unauthorized cloud activity, endpoint compromise, command-and-control communications, privilege escalation, and cryptocurrency mining, the incident severity should be considered Critical and treated as a confirmed security incident rather than a benign anomalous activity alert.
+
+Recommended Actions;
+
+Immediate Containment
+
+Disable and revoke the compromised AWS access key (AKIAJOGCDXJ5NW5PXUPA) and rotate any associated credentials.
+Reset credentials for the web_admin IAM account and review all permissions assigned to the account.
+Enable and enforce MFA for all IAM users, particularly privileged accounts.
+Restrict public access to the frothlywebcode S3 bucket, review bucket ACLs and policies, and remove any unauthorized objects uploaded during the exposure period.
+Isolate compromised endpoints including hoth, FYODOR-L, ABUNGST-L, and BSTOLL-L from the network pending forensic review.
+
+Eradication
+
+Remove unauthorized accounts, 
+including:
+Linux account tomcat7
+Windows account svcvnc
+Remove attacker tools and malware identified during the investigation, 
+including:
+hdoor.exe
+HxTsr.exe
+colonel
+definitelydontinvestigatethisfile.sh
+Identify and remove any persistence mechanisms, scheduled tasks, startup entries, SSH keys, or additional IAM credentials created by the attacker.
+Block communication to known malicious infrastructure, 
+including:
+45.77.53.176
+Related C2 URLs and cryptocurrency mining destinations.
+
+Recovery
+
+Rebuild or restore compromised systems from known-good backups where feasible.
+Validate that no unauthorized AWS resources, users, access keys, or instances remain active.
+Conduct a full vulnerability assessment of affected systems and apply missing security updates, particularly on Linux hosts vulnerable to local privilege escalation.
+
+Investigation and Monitoring
+
+Review CloudTrail logs for all activity associated with the compromised key and account to determine the full scope of attacker actions.
+Review Office 365, Azure AD, Windows, Linux, and network logs for additional indicators of compromise and lateral movement.
+Hunt for connections to the identified C2 infrastructure and any related indicators across the environment.
+Review all email forwarding rules, transport rules, mailbox searches, and account changes for evidence of data access or exfiltration.
+
+Long-Term Improvements
+
+Implement automated secret scanning for source code repositories to prevent credential exposure.
+Enforce least-privilege IAM policies and regularly review access permissions.
+Enable continuous monitoring and alerting for:
+Public S3 bucket exposure
+IAM key creation and usage anomalies
+Privilege escalation activity
+Cryptocurrency mining indicators
+Conduct security awareness training focused on phishing, credential handling, and cloud security best practices.
